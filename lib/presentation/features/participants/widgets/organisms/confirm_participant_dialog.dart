@@ -14,11 +14,11 @@ class ConfirmParticipantDialog extends StatefulWidget {
   const ConfirmParticipantDialog(
       {super.key,
       required this.event,
-      required this.participant,
+      this.participant,
       required this.status,
       required this.barcode});
   final Event event;
-  final Participant participant;
+  final Participant? participant;
   final String status;
   final String barcode;
 
@@ -35,11 +35,35 @@ class _ConfirmParticipantDialogState extends State<ConfirmParticipantDialog> {
   late final _textControllerDistrict = TextEditingController();
   @override
   void initState() {
-    _textControllerName.text = widget.participant.name.toString();
-    _textControllerDni.text = widget.participant.dni.toString();
-    _textControllerCompany.text = widget.participant.company.toString();
-    _textControllerPhone.text = widget.participant.phone.toString();
-    _textControllerDistrict.text = widget.participant.district.toString();
+    if (widget.participant != null) {
+      _textControllerName.text = widget.participant!.name != null && widget.participant!.name.toString().isNotEmpty
+          ? widget.participant!.name.toString()
+          : "(No especificado)";
+
+      _textControllerDni.text = widget.participant!.dni != null
+          ? widget.participant!.dni.toString()
+          : "(No especificado)";
+
+      _textControllerCompany.text = widget.participant!.company != null && widget.participant!.company.toString().isNotEmpty
+          ? widget.participant!.company.toString()
+          : "(No especificado)";
+
+      _textControllerPhone.text = widget.participant!.phone != null && widget.participant!.phone.toString().isNotEmpty
+          ? widget.participant!.phone.toString()
+          : "(No especificado)";
+
+      _textControllerDistrict.text = widget.participant!.district != null && widget.participant!.district.toString().isNotEmpty
+          ? widget.participant!.district.toString()
+          : "(No especificado)";
+    } else {
+      // Si widget.participant es null, asigna "(No especificado)" a todos los controladores de texto
+      _textControllerName.text = "(No especificado)";
+      _textControllerDni.text = "(No especificado)";
+      _textControllerCompany.text = "(No especificado)";
+      _textControllerPhone.text = "(No especificado)";
+      _textControllerDistrict.text = "(No especificado)";
+    }
+
     super.initState();
   }
 
@@ -112,6 +136,7 @@ class _ConfirmParticipantDialogState extends State<ConfirmParticipantDialog> {
                       const SizedBox(
                         height: 10,
                       ),
+                      const Spacer(),
                       Row(
                         children: [
                           const SizedBox(
@@ -120,9 +145,27 @@ class _ConfirmParticipantDialogState extends State<ConfirmParticipantDialog> {
                           Expanded(
                             child: ElevatedButton(
                               onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              child: const Text("Cerrar"),
+                            ),
+                          ) ,
+                          const SizedBox(
+                            width: 10,
+                          ),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () {
                                 BlocProvider.of<ParticipantBloc>(context)
                                     .recordAsistence(
-                                        widget.barcode, widget.event);
+                                    widget.barcode, widget.event);
                                 Navigator.of(context).pop();
                               },
                               style: ElevatedButton.styleFrom(
@@ -132,7 +175,7 @@ class _ConfirmParticipantDialogState extends State<ConfirmParticipantDialog> {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                               ),
-                              child: const Text("Marcar asistencia"),
+                              child: const Text("Registrar"),
                             ),
                           ),
                           const SizedBox(

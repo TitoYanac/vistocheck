@@ -1,6 +1,9 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import 'package:vistocheck/presentation/features/events/bloc/event_bloc.dart';
 
 class SearchEventAppBar extends StatefulWidget {
   const SearchEventAppBar({super.key, required this.onChanged});
@@ -59,7 +62,7 @@ class _SearchEventAppBarState extends State<SearchEventAppBar> {
                               setState(() {
                                 enabled = true;
                               });
-                              widget.onChanged(controller.text, "");
+                              BlocProvider.of<EventBloc>(context).fetchEvents();
                             },
                             child: Container(
                               color: Colors.transparent,
@@ -103,7 +106,8 @@ class _SearchEventAppBarState extends State<SearchEventAppBar> {
                               );
                               if (pickedDate != null) {
                                 setState(() {
-                                  controller.text = pickedDate.toString().split(" ").first;
+                                  String formattedDate = DateFormat('dd/MM/yyyy').format(pickedDate);
+                                  controller.text = formattedDate.toString().split(" ").first;
                                   enabled = true;
                                 });
                                 widget.onChanged(controller.text, "date");
@@ -135,7 +139,7 @@ class _SearchEventAppBarState extends State<SearchEventAppBar> {
                         ),
                         onChanged: (value) {
                           try{
-                           DateTime.parse(value);
+                            int.parse(value.replaceAll("-", "").replaceAll("/", ""));
                            widget.onChanged(value, "date");
                           }catch(e){
                             widget.onChanged(value, "name");

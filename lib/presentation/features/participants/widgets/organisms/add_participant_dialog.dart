@@ -57,6 +57,7 @@ class _AddParticipantDialogState extends State<AddParticipantDialog> {
                     Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                       GestureDetector(
                         onTap: () {
+                          Navigator.pop(context);
                           FocusScope.of(context).unfocus();
                         },
                         child: Container(
@@ -165,10 +166,10 @@ class _AddParticipantDialogState extends State<AddParticipantDialog> {
     String name = _textControllerName.text;
     String status = "Creado"; // Migrado - Creado
     String statusAssist = "Asistio"; // Asistio - No Asistio
-    DateTime registrationDate = DateTime.now();
+    DateTime registrationDate = DateTime.now().subtract(const Duration(hours: 5));
     ObjectId idEvent = widget.event.id;
     int? phone = _textControllerPhone.text == ""
-        ? 0
+        ? null
         : int.parse(_textControllerPhone.text);
     String? company = _textControllerCompany.text;
     String? district = _textControllerDistrict.text;

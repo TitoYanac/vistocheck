@@ -67,19 +67,40 @@ class _ParticipantTemplateState extends State<ParticipantTemplate> {
         },
         child: BlocConsumer<ParticipantBloc, ParticipantState>(
           listener: (context, state) {
-            if (state is SuccessModifyingParticipant) {
-              showSuccessMessage(context, "Se registró la asistencia" );
-            } else if (state is ErrorModifyingParticipant) {
-              showErrorMessage(context, "Error al registrar la asistencia" );
-            }else if (state is SuccessModifyingParticipant) {
-              showSuccessMessage(context, "Se modificó la asistencia");
-            } else if (state is ErrorModifyingParticipant) {
-              showErrorMessage(context, "Error al modificar la asistencia");
-            }else if (state is ErrorLoadingParticipants) {
-              showErrorMessage(context, "Error al cargar los participantes");
-            }else if (state is SuccessLoadingParticipants) {
-              showSuccessMessage(context, "Se cargaron los participantes");
+
+            switch(state.runtimeType){
+              case const (SuccessModifyingParticipant):
+                showSuccessMessage(context, "Se registró la asistencia");
+                break;
+              case const (ErrorModifyingParticipant):
+                showErrorMessage(context, "Error al registrar la asistencia");
+                break;
+              case const (SuccessFilteringParticipants):
+                //showSuccessMessage(context, "Se encontró participantes");
+                break;
+              case const (ErrorFilteringParticipants):
+                showErrorMessage(context, "Error al Filtrar participantes");
+                break;
+              case const (SuccessLoadingParticipants):
+                // showSuccessMessage(context, "Se cargaron los participantes");
+                break;
+              case const (ErrorLoadingParticipants):
+                showErrorMessage(context, "Error al cargar los participantes");
+                break;
+              case const (SuccessFetchingParticipantByDni):
+              // abrimos el dialogo de confirmacion
+                openParticipantDialog(context, BlocProvider.of<ParticipantBloc>(context),
+                    widget.event, state.filteredParticipants.first);
+                break;
+              case const (ErrorFetchingParticipantByDni):
+              // abrimos el dialogo de confirmacion
+                showErrorMessage(context, "Participante no encontrado");
+                break;
+              default:
+                break;
             }
+
+
           },
           builder: (context, state) {
             return Stack(
@@ -103,11 +124,9 @@ class _ParticipantTemplateState extends State<ParticipantTemplate> {
                     setState(() {
                       barcode = code;
                     });
-                    Participant participant = BlocProvider.of<ParticipantBloc>(context)
-                        .filterParticipants(widget.event,code, "name");
-
-                    openParticipantDialog(context, BlocProvider.of<ParticipantBloc>(context),
-                        widget.event, participant);
+                    // obtenemos el participante
+                    BlocProvider.of<ParticipantBloc>(context)
+                        .fetchParticipantByDni(widget.event,code);
                   },
                 ),
                 DraggableScrollableSheet(
@@ -138,10 +157,7 @@ class _ParticipantTemplateState extends State<ParticipantTemplate> {
                           ),
                           ListParticipantBody(
                             key: key,
-                              participants:
-                                  state is SuccessFilteringParticipants
-                                      ? state.filteredParticipants
-                                      : state.participants,
+                              participants: state.filteredParticipants,
                               event: widget.event),
                         ],
                       ),

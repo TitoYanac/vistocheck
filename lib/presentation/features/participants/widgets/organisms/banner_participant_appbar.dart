@@ -115,7 +115,7 @@ class _BannerParticipantAppBarState extends State<BannerParticipantAppBar> {
                             icon: Image.asset(
                                 "assets/icons/icon_person.png"),
                             text:
-                            "${widget.event.participants.length} / ${widget.event.capacity}",
+                            "${state.participants.where((element) => element.statusAssist == "Asistio").length} / ${state.participants.length}",
                             color: Colors.white,
                           ),
                           const SizedBox(

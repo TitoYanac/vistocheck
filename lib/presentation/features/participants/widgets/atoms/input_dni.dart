@@ -44,13 +44,23 @@ class _InputDniState extends State<InputDni> {
           hintText: "DNI*",
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          suffixIcon:
-          suffix ? Image.asset("assets/icons/icon_dni.png") : null,
+          suffixIcon: suffix ? Image.asset("assets/icons/icon_dni.png") : null,
           prefixIcon: prefix ? Image.asset("assets/icons/icon_dni.png") : null,
         ),
         keyboardType: TextInputType.number,
         enabled: widget.enabled ?? true,
         onChanged: (value) {
+          // Elimina cualquier carácter que no sea un número
+          String newValue = value.replaceAll(RegExp(r'[^0-9]'), '');
+
+          // Actualiza el texto en el campo
+          widget.controller.value = widget.controller.value.copyWith(
+            text: newValue,
+            selection: TextSelection.collapsed(offset: newValue.length),
+            composing: TextRange.empty,
+          );
+
+          // Limita la longitud a 8 dígitos
           checkLength(8, widget.controller);
         },
       ),

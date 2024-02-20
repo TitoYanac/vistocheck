@@ -50,6 +50,17 @@ class _InputNameState extends State<InputName> {
           prefixIcon: prefix ? Image.asset("assets/icons/icon_person.png") : null,
         ),
         inputFormatters: [UpperCaseTextFormatter()],
+        onChanged: (value) {
+
+          String newValue = value.replaceAll(RegExp(r'[^a-zA-Z\sáéíóüúÁÉÍÓÚÜ]'), '');
+
+          // Actualiza el texto en el campo
+          widget.controller.value = widget.controller.value.copyWith(
+            text: newValue,
+            selection: TextSelection.collapsed(offset: newValue.length),
+            composing: TextRange.empty,
+          );
+        },
         keyboardType: TextInputType.text,
         enabled: widget.enabled ?? true,
       ),

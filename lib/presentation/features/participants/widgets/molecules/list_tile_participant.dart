@@ -32,9 +32,6 @@ class _ListTileParticipantState extends State<ListTileParticipant> {
     if (widget.participant.status.hashCode != status.hashCode
         || widget.participant.statusAssist.hashCode != statusAssist.hashCode) {
       setState(() {
-        print("didChangeDependencies");
-        print("actualizando estados : ${widget.participant.status}");
-        print("actualizando assist : ${widget.participant.statusAssist}");
         status = widget.participant.status;
         statusAssist = widget.participant.statusAssist;
       });
@@ -48,11 +45,6 @@ class _ListTileParticipantState extends State<ListTileParticipant> {
     if (widget.participant.status.hashCode != oldWidget.participant.status.hashCode
     || widget.participant.statusAssist.hashCode != oldWidget.participant.statusAssist.hashCode) {
       setState(() {
-
-        print("didUpdateWidget");
-        print("actualizando estados : ${widget.participant.status}");
-        print("actualizando assist : ${widget.participant.statusAssist}");
-
         status = widget.participant.status;
         statusAssist = widget.participant.statusAssist;
       });

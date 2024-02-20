@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:vistocheck/presentation/features/auth/bloc/login_bloc.dart';
 
-import '../../../../bloc/realm_bloc.dart';
 import '../../bloc/event_bloc.dart';
 import '../templates/event_template.dart';
 
@@ -17,26 +17,12 @@ class _EventPageState extends State<EventPage> {
   Widget build(BuildContext context) {
     return SafeArea(
 
-      child: BlocBuilder<RealmBloc, RealmState>(
+      child: BlocBuilder<LoginBloc, LoginState>(
           builder: (context, state) {
-            if (state is RealmLoaded) {
-              return BlocProvider(
-                create: (context) => EventBloc(realm: state.realm),
-                child: const EventTemplate(),
-              );
-            } else if( state is RealmLoadError){
-              return const Scaffold(
-                  body: Center(
-                    child: Text("Error..."),
-                  )
-              );
-            } else {
-              return const Scaffold(
-                  body: Center(
-                    child: Text("Loading..."),
-                  )
-              );
-            }
+            return BlocProvider(
+              create: (context) => EventBloc(realm: BlocProvider.of<LoginBloc>(context).realm),
+              child: const EventTemplate(),
+            );
           }
       ),
     )

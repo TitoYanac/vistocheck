@@ -29,11 +29,34 @@ class _ShowParticipantDialogState extends State<ShowParticipantDialog> {
   late final _textControllerDistrict = TextEditingController();
   @override
   void initState() {
-    _textControllerName.text = widget.participant.name.toString();
-    _textControllerDni.text = widget.participant.dni.toString();
-    _textControllerCompany.text = widget.participant.company.toString();
-    _textControllerPhone.text = widget.participant.phone.toString();
-    _textControllerDistrict.text = widget.participant.district.toString();
+    if (widget.participant != null) {
+      _textControllerName.text = widget.participant!.name != null && widget.participant!.name.toString().isNotEmpty
+          ? widget.participant!.name.toString()
+          : "(No especificado)";
+
+      _textControllerDni.text = widget.participant!.dni != null
+          ? widget.participant!.dni.toString()
+          : "(No especificado)";
+
+      _textControllerCompany.text = widget.participant!.company != null && widget.participant!.company.toString().isNotEmpty
+          ? widget.participant!.company.toString()
+          : "(No especificado)";
+
+      _textControllerPhone.text = widget.participant!.phone != null && widget.participant!.phone.toString().isNotEmpty
+          ? widget.participant!.phone.toString()
+          : "(No especificado)";
+
+      _textControllerDistrict.text = widget.participant!.district != null && widget.participant!.district.toString().isNotEmpty
+          ? widget.participant!.district.toString()
+          : "(No especificado)";
+    } else {
+      // Si widget.participant es null, asigna "(No especificado)" a todos los controladores de texto
+      _textControllerName.text = "(No especificado)";
+      _textControllerDni.text = "(No especificado)";
+      _textControllerCompany.text = "(No especificado)";
+      _textControllerPhone.text = "(No especificado)";
+      _textControllerDistrict.text = "(No especificado)";
+    }
     super.initState();
   }
 

@@ -119,9 +119,6 @@ class ParticipantBloc extends Bloc<ParticipantEvent, ParticipantState> {
           int.parse(filter);
           filteredParticipants = participants
               .where((element) {
-            print("buscando por dni: $filter");
-            print(element.dni.toString().contains(filter.toString()));
-            print(element.dni.toString() == filter);
             return element.dni.toString().contains(filter.toString())
                 || element.dni.toString() == filter;
           })
@@ -131,7 +128,7 @@ class ParticipantBloc extends Bloc<ParticipantEvent, ParticipantState> {
         }
 
         emit(SuccessFilteringParticipants(
-            participants.toList(), filteredParticipants));
+            participants.toList(), filteredParticipants.toList()));
       }).catchError((error) {
         final participants = realm!
             .all<Participant>()
@@ -156,7 +153,6 @@ class ParticipantBloc extends Bloc<ParticipantEvent, ParticipantState> {
                 element.idEvent == idSelectedEvent));
 
         if (existingParticipantList.isEmpty) {
-          debugPrint("No se encontro el participante");
           emit(ErrorModifyingParticipant(
               participants.toList(), participants.toList()));
           return;
@@ -164,7 +160,7 @@ class ParticipantBloc extends Bloc<ParticipantEvent, ParticipantState> {
         final existingParticipant = existingParticipantList.first;
 
         realm!.write(() {
-          existingParticipant.asistenceDate = DateTime.now();
+          existingParticipant.asistenceDate = DateTime.now().subtract(const Duration(hours: 5));
           existingParticipant.statusAssist = "Asistio";
           realm!.add(existingParticipant);
         });
@@ -177,7 +173,6 @@ class ParticipantBloc extends Bloc<ParticipantEvent, ParticipantState> {
         emit(SuccessModifyingParticipant(
             updatedParticipants.toList(), filteredParticipants.toList()));
       }).catchError((error) {
-        debugPrint("Ocurrio un error: $error");
 
         final updatedParticipants = realm!
             .all<Participant>()
@@ -186,6 +181,24 @@ class ParticipantBloc extends Bloc<ParticipantEvent, ParticipantState> {
             updatedParticipants.toList(), updatedParticipants.toList()));
       });
     });
+
+    on<ParticipantByDniFetch>((event, emit) async {
+      emit(FetchingParticipantByDni([], []));
+      try {
+        final participants = realm!
+            .all<Participant>()
+            .where((p) => p.idEvent == event.selectedEvent.id).toList();
+        final participant = participants.where((p) => p.dni == int.parse(event.dni)).toList();
+
+        emit(SuccessFetchingParticipantByDni(participants.toList(), participant.toList()));
+      } catch (error) {
+
+        final participants = realm!
+            .all<Participant>()
+            .where((p) => p.idEvent == event.selectedEvent.id).toList();
+        emit(ErrorFetchingParticipantByDni(participants.toList(), participants.toList()));
+      }
+    });
   }
   void fetchParticipants(Event selectedEvent) =>
       add(ParticipantFetch(selectedEvent));
@@ -193,15 +206,19 @@ class ParticipantBloc extends Bloc<ParticipantEvent, ParticipantState> {
   void addParticipant(Event selectedEvent, Participant participant) =>
       add(AddParticipant(selectedEvent, participant));
 
-  Participant filterParticipants(
+  void filterParticipants(
       Event selectedEvent, String filter, String typeFilter) {
     add(FilterParticipants(selectedEvent, filter, typeFilter));
-    return state.participants.firstWhere(
-        (element) => element.dni.toString().contains(filter.toString()));
   }
+  
+  void fetchParticipantByDni(Event selectedEvent, String dni) =>
+      add(ParticipantByDniFetch(selectedEvent, dni));
 
   void recordAsistence(String dni, Event selectedEvent) =>
       add(RecordAsistence(selectedEvent, dni));
+
+
+
 }
 
 DateTime getRandomDate() {
@@ -236,6 +253,11 @@ class ParticipantFetch extends ParticipantEvent {
   ParticipantFetch(super.selectedEvent);
 }
 
+class ParticipantByDniFetch extends ParticipantEvent {
+  String dni;
+  ParticipantByDniFetch(super.selectedEvent, this.dni);
+}
+
 class RecordAsistence extends ParticipantEvent {
   String dni;
   RecordAsistence(super.selectedEvent, this.dni);
@@ -254,9 +276,24 @@ class FilterParticipants extends ParticipantEvent {
 }
 
 class ParticipantState {
-  List<Participant> participants;
-  List<Participant> filteredParticipants;
-  ParticipantState(this.participants, this.filteredParticipants);
+  List<Participant> participants = [];
+  List<Participant> filteredParticipants = [];
+  ParticipantState(List<Participant> participants,List<Participant> filteredParticipants) {
+    this.participants = participants.length>1?ordenarParticipantes(participants):participants;
+    this.filteredParticipants = filteredParticipants.length>1?ordenarParticipantes(filteredParticipants):filteredParticipants;
+
+  }
+  List<Participant> ordenarParticipantes(List<Participant> participants) {
+    // Copia la lista original
+    List<Participant> participantsOrdenados = List<Participant>.from(participants);
+
+    // Ordena la lista por fecha de registro, de más antiguo a más reciente
+    participantsOrdenados.sort((a, b) {
+      return b.registrationDate.compareTo(a.registrationDate);
+    });
+
+    return participantsOrdenados;
+  }
 }
 
 class LoadingParticipants extends ParticipantState {
@@ -305,4 +342,16 @@ class SuccessModifyingParticipant extends ParticipantState {
 
 class ErrorModifyingParticipant extends ParticipantState {
   ErrorModifyingParticipant(super.participants, super.filteredParticipants);
+}
+
+class FetchingParticipantByDni extends ParticipantState {
+  FetchingParticipantByDni(super.participants, super.filteredParticipants);
+}
+
+class SuccessFetchingParticipantByDni extends ParticipantState {
+  SuccessFetchingParticipantByDni(super.participants, super.filteredParticipants);
+}
+
+class ErrorFetchingParticipantByDni extends ParticipantState {
+  ErrorFetchingParticipantByDni(super.participants, super.filteredParticipants);
 }

@@ -143,9 +143,7 @@ class _SearchParticipantAppBarState extends State<SearchParticipantAppBar> {
                           isDense: false,
                         ),
                         onChanged: (value) {
-                          print("value: $value");
                           String inputType = determineInputType(value);
-                          print("inputType: $inputType");
                           widget.onChanged(value, inputType);
                         },
                       ),
@@ -170,7 +168,7 @@ class _SearchParticipantAppBarState extends State<SearchParticipantAppBar> {
     // Expresiones regulares para validar fecha, nombre y DNI
     RegExp dateRegExp = RegExp(r'^\d{4}-\d{2}-\d{2}$');
     RegExp nameRegExp = RegExp(r'^[A-Za-z\s]+$');
-    RegExp dniRegExp = RegExp(r'^\d{8}[A-Za-z]$');
+    RegExp dniRegExp = RegExp(r'^\d+$');
 
     if (dateRegExp.hasMatch(value)) {
       return "date";

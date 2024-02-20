@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'package:flutter/cupertino.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:realm/realm.dart';
@@ -8,16 +7,23 @@ import '../../../../domain/entities/event.dart';
 
 class EventBloc extends Bloc<EventEvent, EventState> {
   late Realm? realm;
+
+
+
   EventBloc({required this.realm}) : super(LoadingEvents([], [])) {
-    on<EventFetch>((event, emit) {
+    on<EventFetch>((event, emit) async {
       emit(LoadingEvents([], []));
-      realm!.refreshAsync().then((_) {
+      try {
+        await realm!.refreshAsync();
         final RealmResults<Event> events = realm!.all<Event>();
-        emit(SuccessLoadingEvents(events.toList(), events.toList()));
-      }).catchError((error) {
+        List<Event> eventosOrdenados = ordenarEventos(events);
+
+        emit(SuccessLoadingEvents(eventosOrdenados, eventosOrdenados));
+      } catch (error) {
         emit(ErrorLoadingEvents([], []));
-      });
+      }
     });
+
 
     on<AddEvent>((event, emit) {
       emit(AddingEvent([], []));
@@ -27,10 +33,13 @@ class EventBloc extends Bloc<EventEvent, EventState> {
           realm!.add(newEvent);
         });
         final RealmResults<Event> events = realm!.all<Event>();
-        emit(SuccessAddingEvent(events.toList(), events.toList()));
+        List<Event> eventosOrdenados = ordenarEventos(events);
+
+        emit(SuccessAddingEvent(eventosOrdenados, eventosOrdenados));
       }).catchError((error) {
         final RealmResults<Event> events = realm!.all<Event>();
-        emit(ErrorAddingEvent(events.toList(), events.toList()));
+        List<Event> eventosOrdenados = ordenarEventos(events);
+        emit(ErrorAddingEvent(eventosOrdenados, eventosOrdenados));
       });
     });
 
@@ -44,10 +53,13 @@ class EventBloc extends Bloc<EventEvent, EventState> {
 
         try {
           if (typeFilter == "date") {
-            DateTime filterDate = DateTime.parse(filter);
+            String filterDate = filter.replaceAll("-", "").replaceAll("/", "");
             filteredEventsList = events
-                .where((element) => element.date.isAtSameMomentAs(filterDate))
-                .toList();
+                .where((element){
+                  DateTime date = element.date;
+                  String dateDB = "${date.day.toString().length == 1 ? "0${date.day}" : date.day}${date.month.toString().length == 1 ? "0${date.month}" : date.month}${date.year}";
+                  return dateDB.contains(filterDate);
+            }).toList();
           } else if (typeFilter == "name") {
             filteredEventsList = events
                 .where((element) =>
@@ -56,15 +68,40 @@ class EventBloc extends Bloc<EventEvent, EventState> {
           } else {
             filteredEventsList = [];
           }
-          emit(SuccessFilteringEvents(events.toList(), filteredEventsList));
+
+          List<Event> eventosOrdenadosFiltrados = ordenarEventos(filteredEventsList);
+          List<Event> eventosOrdenados = ordenarEventos(events);
+          emit(SuccessFilteringEvents(eventosOrdenados, eventosOrdenadosFiltrados));
         } catch (e) {
-          emit(ErrorFilteringEvents(events.toList(), []));
+          List<Event> eventosOrdenados = ordenarEventos(events);
+          emit(ErrorFilteringEvents(eventosOrdenados, []));
         }
       }).catchError((error) {
         final RealmResults<Event> events = realm!.all<Event>();
-        emit(ErrorFilteringEvents(events.toList(), []));
+        List<Event> eventosOrdenados = ordenarEventos(events);
+
+        emit(ErrorFilteringEvents(eventosOrdenados, []));
       });
     });
+    on<UpdateStatus>((event, emit) {
+      realm!.refreshAsync().then((_) {
+        final RealmResults<Event> events = realm!.all<Event>();
+
+        // Recorre todos los eventos
+        for (final event in events) {
+          // Calcula el nuevo estado del evento
+          String newStatus = validateStatus(event);
+
+          // Actualiza el estado del evento si es necesario
+          if (event.status != newStatus) {
+            realm!.write(() {
+              event.status = newStatus;
+            });
+          }
+        }
+      });
+    });
+
   }
   void fetchEvents() => add(EventFetch());
 
@@ -72,7 +109,24 @@ class EventBloc extends Bloc<EventEvent, EventState> {
 
   void filterEvents(String filter, String typeFilter) =>
       add(FilterEvents(filter, typeFilter));
+  String validateStatus(Event event) {
+    DateTime dateInitEvent = event.date.add(const Duration(hours: 5)).toLocal();
+    DateTime dateEndEvent = dateInitEvent.add(Duration(minutes: event.duration));
+    DateTime now = DateTime.now();
 
+    if (dateInitEvent.isBefore(now) && dateEndEvent.isAfter(now)) {
+      return "En curso";
+    }
+    if (dateEndEvent.isBefore(now)) {
+      return "Finalizado";
+    }
+
+    if (dateInitEvent.isAfter(now.add(const Duration(days: 3)))) {
+      return "Proximamente";
+    }
+
+    return "En pocos dias";
+  }
   DateTime getRandomDate() {
     var rng = Random();
     var tomorrow = DateTime.now().add(const Duration(days: 1));
@@ -123,6 +177,61 @@ class EventBloc extends Bloc<EventEvent, EventState> {
     );
     return newEvent;
   }
+
+  List<Event> ordenarEventos(events) {
+    // Copia la lista original
+    List<Event> eventosOrdenados = List<Event>.from(events);
+
+    // Obtiene la fecha actual
+    DateTime ahora = DateTime.now().subtract(const Duration(hours: 5)).toLocal();
+
+    // Filtra los eventos que finalizaron hace más de un día
+    eventosOrdenados = eventosOrdenados.where((event) {
+      DateTime dateEndEvent = event.date.toLocal().add(Duration(minutes: event.duration));
+      return dateEndEvent.isAfter(ahora.subtract(const Duration(days: 1)));
+    }).toList();
+
+    // Ordena la lista
+    eventosOrdenados.sort((a, b) {
+      DateTime aEnd = a.date.toLocal().add(Duration(minutes: a.duration));
+      DateTime bEnd = b.date.toLocal().add(Duration(minutes: b.duration));
+
+      // Comprueba si el evento ya pasó
+      bool aPasado = aEnd.isBefore(ahora);
+      bool bPasado = bEnd.isBefore(ahora);
+
+      bool aEnCurso = a.date.toLocal().isBefore(ahora) && aEnd.isAfter(ahora);
+      bool bEnCurso = b.date.toLocal().isBefore(ahora) && bEnd.isAfter(ahora);
+
+      if (aEnCurso && bEnCurso) {
+        // Si ambos eventos están en curso, ordena de los que están más próximos a terminar a los que tienen más tiempo restante
+        return aEnd.compareTo(bEnd);
+      } else if (aEnCurso) {
+        // Si solo a está en curso, a va primero
+        return -1;
+      } else if (bEnCurso) {
+        // Si solo b está en curso, b va primero
+        return 1;
+      } else if (aPasado && bPasado) {
+        // Si ambos eventos ya pasaron, ordena de más reciente a más antiguo
+        return bEnd.compareTo(aEnd);
+      } else if (aPasado) {
+        // Si solo a ya pasó, b va primero
+        return 1;
+      } else if (bPasado) {
+        // Si solo b ya pasó, a va primero
+        return -1;
+      } else {
+        // Si ninguno de los eventos ha pasado, ordena de más cercano a más lejano
+        return a.date.toLocal().compareTo(b.date.toLocal());
+      }
+    });
+
+    return eventosOrdenados;
+  }
+
+  void updateStatus() => add(UpdateStatus());
+
 }
 
 abstract class EventEvent {}
@@ -130,6 +239,10 @@ abstract class EventEvent {}
 class EventFetch extends EventEvent {}
 
 class AddEvent extends EventEvent {}
+
+class UpdateStatus extends EventEvent {
+
+}
 
 class FilterEvents extends EventEvent {
   String filter;

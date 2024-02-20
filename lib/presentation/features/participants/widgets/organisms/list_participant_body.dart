@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:vistocheck/domain/entities/event.dart';
 
+import '../../../../../domain/entities/event.dart';
 import '../../../../../domain/entities/participant.dart';
 import '../molecules/list_tile_participant.dart';
 

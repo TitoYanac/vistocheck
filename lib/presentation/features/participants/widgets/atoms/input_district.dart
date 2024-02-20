@@ -49,6 +49,18 @@ class _InputDistrictState extends State<InputDistrict> {
           suffix ? Image.asset("assets/icons/icon_location.png") : null,
           prefixIcon: prefix ? Image.asset("assets/icons/icon_location.png") : null,
         ),
+
+        onChanged: (value) {
+
+          String newValue = value.replaceAll(RegExp(r'[^a-zA-Z0-9\sáéíóüúÁÉÍÓÚÜ]'), '');
+
+          // Actualiza el texto en el campo
+          widget.controller.value = widget.controller.value.copyWith(
+            text: newValue,
+            selection: TextSelection.collapsed(offset: newValue.length),
+            composing: TextRange.empty,
+          );
+        },
         inputFormatters: [UpperCaseTextFormatter()],
         keyboardType: TextInputType.text,
         enabled: widget.enabled ?? true,

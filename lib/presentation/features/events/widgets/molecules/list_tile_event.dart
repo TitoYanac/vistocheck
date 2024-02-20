@@ -1,10 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../domain/entities/event.dart';
-import '../../../../bloc/realm_bloc.dart';
 import '../../../../widgets/molecules/row_icon_text.dart';
 import '../../../../widgets/organisms/row_icon_text_composite.dart';
+import '../../../auth/bloc/login_bloc.dart';
 import '../../../participants/widgets/pages/participant_page.dart';
 
 class ListTileEvent extends StatefulWidget {
@@ -18,20 +20,33 @@ class ListTileEvent extends StatefulWidget {
 
 class _ListTileEventState extends State<ListTileEvent> {
   String status = "";
-  Color statusColor = Colors.red;
+  Color statusColor = Colors.yellow;
+  Timer? timer;
+
   @override
   void initState() {
-    status = widget.event.status;
-    validateStatusColor();
     super.initState();
+
+
+    status = validateStatus(widget.event);
+    print("status $status");
+    statusColor = getStatusColor(status);
+    print("statuscolor ${statusColor?.toString()}");
   }
+
+  @override
+  void dispose() {
+    // Cancelar el temporizador al eliminar el widget para evitar pérdidas de memoria
+    timer?.cancel();
+    super.dispose();
+  }
+
   @override
   void didUpdateWidget(covariant ListTileEvent oldWidget) {
     if (widget.event.status != oldWidget.event.status) {
       setState(() {
-        status = widget.event.status;
+        statusColor = getStatusColor(validateStatus(widget.event));
       });
-      validateStatusColor();
     }
     super.didUpdateWidget(oldWidget);
   }
@@ -39,26 +54,57 @@ class _ListTileEventState extends State<ListTileEvent> {
   void didChangeDependencies() {
     if (widget.event.status != status) {
       setState(() {
-        status = widget.event.status;
+        statusColor = getStatusColor(validateStatus(widget.event));
       });
-      validateStatusColor();
     }
-
     super.didChangeDependencies();
   }
-  void validateStatusColor() {
-    setState(() {
-      if (status == "Activo") {
-        statusColor = Colors.green;
-      }
-      if (status == "Inactivo") {
-        statusColor = Colors.red;
-      }
-      if (status == "Cancelado") {
-        statusColor = Colors.grey;
-      }
-    });
+
+  String validateStatus(Event event) {
+    DateTime dateInitEvent = event.date.add(const Duration(hours: 5)).toLocal();
+    DateTime dateEndEvent = dateInitEvent.add(Duration(minutes: event.duration));
+    DateTime now = DateTime.now();
+
+    if (dateInitEvent.isBefore(now) && dateEndEvent.isAfter(now)) {
+      return "En curso";
+    }
+    if (dateEndEvent.isBefore(now)) {
+      return "Finalizado";
+    }
+
+    if (dateInitEvent.isAfter(now.add(const Duration(days: 3)))) {
+      return "Proximamente";
+    }
+
+    return "En pocos dias";
   }
+
+  Color getStatusColor(String status) {
+    print("consiguiendo ${widget.event.name} color status $status");
+    switch (status) {
+      case "Proximamente":
+        print("Proximamente");
+        print("grey");
+        return Colors.grey;
+      case "En pocos dias":
+        print("En pocos dias");
+        print("orange");
+        return Colors.orange;
+      case "En curso":
+        print("En curso");
+        print("green");
+        return Colors.green;
+      case "Finalizado":
+        print("Finalizado");
+        print("red");
+        return Colors.red;
+      default:
+        print("default");
+        print("black");
+        return Colors.black; // Color por defecto en caso de un estado desconocido
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Align(
@@ -69,13 +115,14 @@ class _ListTileEventState extends State<ListTileEvent> {
           children: [
             ElevatedButton(
               onPressed: () {
+                FocusScope.of(context).unfocus();
                 // Acción al presionar el botón
                 Future.delayed(const Duration(milliseconds: 500), () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => BlocProvider.value(
-                        value: BlocProvider.of<RealmBloc>(context),
+                        value: BlocProvider.of<LoginBloc>(context),
                         child: ParticipantPage(event: widget.event),
                       ),
                     ),
@@ -113,12 +160,19 @@ class _ListTileEventState extends State<ListTileEvent> {
                     const SizedBox(
                       height: 10,
                     ),
-                    RowIconText(
-                        icon: Image.asset("assets/icons/icon_bookmark.png"),
-                        text: (widget.event.name.isEmpty || widget.event.name == "")?
-                        "(No especificado)"
-                        :widget.event.name,
-                        fontWeight: FontWeight.bold),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: RowIconText(
+                              icon: Image.asset("assets/icons/icon_bookmark.png"),
+                              text: (widget.event.name.isEmpty || widget.event.name == "")?
+                              "(No especificado)"
+                              :widget.event.name,
+                              fontWeight: FontWeight.bold),
+                        ),
+                        Text(status, style: TextStyle(color: statusColor)),
+                      ],
+                    ),
                     const SizedBox(
                       height: 10,
                     ),

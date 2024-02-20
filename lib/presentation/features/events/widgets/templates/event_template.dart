@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:vistocheck/presentation/core/messages/scaffold_messages.dart';
 
+import '../../../../core/messages/scaffold_messages.dart';
+import '../../../auth/bloc/login_bloc.dart';
 import '../../bloc/event_bloc.dart';
 import '../organisms/banner_event_appbar.dart';
 import '../organisms/list_event_body.dart';
@@ -54,6 +55,23 @@ class _EventTemplateState extends State<EventTemplate> {
           );
         },
       ),
+      floatingActionButton: BlocConsumer<LoginBloc, LoginState>(
+        listener: (context, state) {
+
+        },
+        builder: (context, state) {
+          return state.userData?.role == "admin"?FloatingActionButton(
+            onPressed: () {
+              BlocProvider.of<EventBloc>(context).updateStatus();
+            },
+            child: const Icon(
+              Icons.refresh,
+              color: Colors.red,
+            ),
+          ):Container();
+        },
+
+      )
     );
   }
 }
